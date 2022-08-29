@@ -1,7 +1,13 @@
 import { ProcessorQueue } from './ProcessorQueue';
-import { MessageAdapter, Message } from './MessageAdapter';
+import { MessageAdapter, Message } from './messageAdapters';
 import { whilst, times } from 'async';
 import { wait } from './utils';
+
+export interface MessageSubscriberParams {
+  messageAdapter: MessageAdapter
+  parallelism: number
+  refreshInterval?: number
+}
 
 export class MessageSubscriber extends ProcessorQueue {
     private _running: boolean;
@@ -11,7 +17,7 @@ export class MessageSubscriber extends ProcessorQueue {
     private _maxMessages: number;
     private _refreshInterval: number
 
-    constructor(params: any) {
+    constructor(params: MessageSubscriberParams) {
         super(params);
         this._messageAdapter = params.messageAdapter;
 
@@ -23,7 +29,7 @@ export class MessageSubscriber extends ProcessorQueue {
           self.emit('deleted', args[0]);
         }
 
-        this._maxMessages = params.maxMessages;
+        this._maxMessages = Math.ceil(params.parallelism * 1.10);
         this._refreshInterval = params.refreshInterval || 30,
         this._maxNumberOfMessages = 10;
         this._running = false;

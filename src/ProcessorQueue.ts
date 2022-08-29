@@ -1,5 +1,5 @@
 import { MessageEmitter } from './MessageEmitter';
-import { Message } from './MessageAdapter';
+import { Message } from './messageAdapters';
 import { queue, QueueObject } from 'async';
 
 export class ProcessorQueue extends MessageEmitter {

@@ -2,12 +2,25 @@
   "name": "message-subscriber",
   "version": "0.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf dist && tsc",
+    "lint": "eslint src/**/*.ts"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:CamiloAvelar/message-subscriber.git"
+  },
+  "keywords": [
+    "message",
+    "subscriber",
+    "sqs",
+    "queue",
+    "consumer",
+    "receiver"
+  ],
+  "author": "Camilo Avelar (camiloavelar@fastmail.com)",
+  "license": "MIT",
   "dependencies": {
     "async": "^3.2.4",
     "aws-sdk": "^2.761.0",
