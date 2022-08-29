@@ -1,0 +1,85 @@
+extends: ["eslint:recommended"]
+
+env:
+  node: true
+  es2021: true
+
+parserOptions:
+  ecmaVersion: 2020
+  sourceType: module
+
+rules:
+  indent:
+    - error
+    - 2
+  linebreak-style: 0
+  eqeqeq: 2
+  quotes:
+    - error
+    - single
+  semi:
+    - error
+    - always
+  no-console:
+    - off
+  no-unused-vars:
+    - off
+  comma-dangle:
+    - error
+    - objects: always
+  curly:
+    - error
+  brace-style:
+    - error
+  padding-line-between-statements:
+    - error
+    - blankLine: always
+      prev:
+        - const
+        - let
+        - var
+      next: "*"
+    - blankLine: any
+      prev:
+        - const
+        - let
+        - var
+      next:
+        - const
+        - let
+        - var
+    - blankLine: never
+      prev:
+        - case
+        - default
+      next: "*"
+    - blankLine: always
+      prev: directive
+      next: "*"
+    - blankLine: any
+      prev: directive
+      next: "directive"
+    - blankLine: always
+      prev: import
+      next: "*"
+    - blankLine: any
+      prev: import
+      next: "import"
+    - blankLine: always
+      prev: block-like
+      next: "*"
+    - blankLine: always
+      prev: function
+      next: "*"
+  no-multiple-empty-lines:
+    - error
+    - max: 1
+      maxEOF: 1
+      maxBOF: 0
+  padded-blocks:
+    - error
+    - never
+  lines-between-class-members:
+    - error
+    - always
+    - exceptAfterSingleLine: true
