@@ -98,30 +98,34 @@ export class MessageSubscriber extends MessageEmitter {
       if(numberOfRequests) {
         let totalMessages = idleMessages;
 
-        await times(numberOfRequests, async () => {
-          const messagesToRequest = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
-
-          const messages = await this._messageAdapter.receive(messagesToRequest);
-
-          if(!messages.length) {
-            this.emit('empty');
-            return;
-          }
-
-          if(this._refreshInterval > 0) {
-            messages.forEach(this._startRefresh.bind(this));
-          }
-
-          this._processorQueue.push(messages);
-
-          totalMessages -= messages.length;
-        });
+        await times(numberOfRequests, this._requestMessages(totalMessages).bind(this));
       } else {
         await wait(10);
       }
     } catch (err) {
       this.emit('error', err);
     }
+  }
+
+  private _requestMessages(totalMessages: number) {
+    return async () => {
+      const messagesToRequest: number = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
+
+      const messages = await this._messageAdapter.receive(messagesToRequest);
+
+      if(!messages.length) {
+        this.emit('empty');
+        return;
+      }
+
+      if(this._refreshInterval > 0) {
+        messages.forEach(this._startRefresh.bind(this));
+      }
+
+      this._processorQueue.push(messages);
+
+      totalMessages -= messages.length;
+    };
   }
 
   private async _stopRunning(err?: any) {
