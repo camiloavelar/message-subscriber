@@ -3,6 +3,7 @@
 [![NPM version][npm-image]][npm-url]
 [![Build status][ci-image]][ci-url]
 ![TypeScript types][typescript-image]
+[![Maintainability][codeclimate-image]][codeclimate-url]
 [![Known Vulnerabilities][snyk-image]][snyk-url]
 [![FOSSA Status][fossa-badge-image]][fossa-badge-url]
 
@@ -25,3 +26,5 @@ MIT
 [snyk-image]: https://snyk.io/test/npm/message-subscriber/badge.svg
 [snyk-url]: https://snyk.io/test/npm/message-subscriber
 [typescript-image]: https://badgen.net/npm/types/tslib
+[codeclimate-url]: https://codeclimate.com/github/CamiloAvelar/message-subscriber/maintainability
+[codeclimate-image]: https://api.codeclimate.com/v1/badges/3ad1972472d6e93e3add/maintainability
