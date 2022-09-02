@@ -1,133 +1,188 @@
+import { MessageEmitter } from './MessageEmitter';
 import { ProcessorQueue } from './ProcessorQueue';
 import { MessageAdapter, Message } from './messageAdapters';
 import { whilst, times } from 'async';
 import { wait } from './utils';
 
-export interface MessageSubscriberParams {
+export type MessageSubscriberParams = {
   messageAdapter: MessageAdapter
   parallelism: number
   refreshInterval?: number
-}
+};
 
-export class MessageSubscriber extends ProcessorQueue {
-    private _running: boolean;
-    private _paused: boolean;
-    private _messageAdapter: MessageAdapter;
-    private _maxNumberOfMessages: number;
-    private _maxMessages: number;
-    private _refreshInterval: number
+export class MessageSubscriber extends MessageEmitter {
+  private _running: boolean;
+  private _paused: boolean;
+  private _stoped: boolean;
+  private _messageAdapter: MessageAdapter;
+  private _maxNumberOfMessages: number;
+  private _maxMessages: number;
+  private _refreshInterval: number;
+  private _processorQueue: ProcessorQueue;
 
-    constructor(params: MessageSubscriberParams) {
-        super(params);
-        this._messageAdapter = params.messageAdapter;
+  constructor(params: MessageSubscriberParams) {
+    super();
+    this._messageAdapter = params.messageAdapter;
+    this._processorQueue = new ProcessorQueue({
+      parallelism: params.parallelism,
+      queueFunction: this._queueFunction.bind(this),
+    });
 
-        const originalDelete = this._messageAdapter.delete;
-        const self = this;
-        this._messageAdapter.delete = async function (...args: any) {
-          await originalDelete.apply(this, args);
-          self.emit(`deleted ${args[0]}`);
-          self.emit('deleted', args[0]);
-        }
+    this._maxMessages = Math.ceil(params.parallelism * 1.10);
+    this._refreshInterval = params.refreshInterval || 30,
+    this._maxNumberOfMessages = this._messageAdapter.maxNumberOfMessages || 10;
+    this._running = false;
+    this._paused = false;
+    this._stoped = false;
+    this._decorateDelete();
+  }
 
-        this._maxMessages = Math.ceil(params.parallelism * 1.10);
-        this._refreshInterval = params.refreshInterval || 30,
-        this._maxNumberOfMessages = 10;
-        this._running = false;
-        this._paused = false;
+  get length() {
+    return this._processorQueue.length;
+  }
+
+  public async gracefulShutdown() {
+    this._running = false;
+    await this._processorQueue.drain();
+    this.emit('drained');
+  }
+
+  public stop() {
+    this._processorQueue.stop();
+    this._running = false;
+  }
+
+  public pause() {
+    this._paused = true;
+    this._processorQueue.pause();
+    this.emit('paused');
+  }
+
+  public resume() {
+    this._paused = false;
+    this._processorQueue.resume();
+    this.emit('resumed');
+  }
+
+  public start() {
+    if(!this._hasMessageListener()) {
+      throw new Error('Message listener should be implemented before start call.');
     }
 
-    public async gracefulShutdown() {
-        this._running = false;
-        await this.drain();
-        this.emit('drained');
+    if(this._stoped) {
+      throw new Error('The subscriber is in stopped state, cannot call start again.');
     }
 
-    public stop() {
-      this._running = false;
-    }
+    this._running = true;
 
-    public pause() {
-      this._paused = true;
-      this.emit('paused');
-    }
+    whilst (
+      this._checkRunning.bind(this),
+      this._getMessages.bind(this),
+      this._stopRunning.bind(this)
+    );
+  }
 
-    public resume() {
-      this._paused = false;
-      this.emit('resumed');
-    }
+  private async _checkRunning() {
+    return this._running;
+  }
 
-    public start() {
-      if(this.listeners('message').length === 0) {
-        throw new Error('Message listener should be implemented.');
+  private async _getMessages() {
+    try {
+      if(this._paused) {
+        return;
       }
 
-      this._running = true;
+      const idleMessages = this._maxMessages - (this._processorQueue.length);
+      const numberOfRequests = Math.ceil(idleMessages / this._maxNumberOfMessages);
 
-      whilst (
-        async () => {
-          return this._running;
-        },
-        async () => {
-          if(this._paused) {
+      if(numberOfRequests) {
+        let totalMessages = idleMessages;
+
+        await times(numberOfRequests, async () => {
+          const messagesToRequest = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
+
+          const messages = await this._messageAdapter.receive(messagesToRequest);
+
+          if(!messages.length) {
+            this.emit('empty');
             return;
           }
 
-          const idleMessages = this._maxMessages - (this.length);
-          const numberOfRequests = Math.ceil(idleMessages / this._maxNumberOfMessages);
-          if(numberOfRequests) {
-            let totalMessages = idleMessages;
-
-            await times(numberOfRequests, async () => {
-              const messagesToRequest = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
-
-              const messages = await this._messageAdapter.receive(messagesToRequest);
-
-              if(!messages.length) {
-                this.emit('empty');
-                return;
-              }
-
-              if(this._refreshInterval > 0) {
-                messages.forEach(this.startRefresh.bind(this));
-              }
-
-              this.push(messages);
-
-              totalMessages -= messages.length;
-            });
-          } else {
-            await wait(10);
+          if(this._refreshInterval > 0) {
+            messages.forEach(this._startRefresh.bind(this));
           }
-        },
-        async (err) => {
-          console.log(err);
-          this.emit('stoped');
-        }
-      );
-    }
 
-    private startRefresh(message: Message) {
-      const refreshInterval = this._refreshInterval;
-      const interval = setInterval(async () => {
-        try {
-          await message.delay(refreshInterval);
-        } catch (err) {
-          console.log(err);
-        }
-      }, (refreshInterval * 0.7) * 1000);
+          this._processorQueue.push(messages);
 
-      const finishedCallback = () => {
-        clearInterval(interval);
-        this.removeAllListeners(`deleted ${message.id}`);
+          totalMessages -= messages.length;
+        });
+      } else {
+        await wait(10);
       }
-
-      this.once(`finished ${message.id}`, finishedCallback);
-
-      this.once(`deleted ${message.id}`, () => {
-        clearInterval(interval);
-        this.off(`finished ${message.id}`, finishedCallback);
-      });
-
-      interval.unref();
+    } catch (err) {
+      this.emit('error', err);
     }
+  }
+
+  private async _stopRunning(err?: any) {
+    if(err) {
+      this.emit('error', err);
+    }
+
+    this._stoped = true;
+
+    this.emit('stoped');
+  }
+
+  private _startRefresh(message: Message) {
+    const refreshInterval = this._refreshInterval;
+    const interval = setInterval(async () => {
+      try {
+        await message.delay(refreshInterval);
+      } catch (err) {
+        this.emit('error', err);
+      }
+    }, (refreshInterval * 0.7) * 1000);
+
+    const self = this;
+
+    function finishedCallback() {
+      clearInterval(interval);
+      self.removeListener(`deleted ${message.receipt}`, deletedCallback);
+    }
+
+    function deletedCallback() {
+      clearInterval(interval);
+      self.removeListener(`finished ${message.id}`, finishedCallback);
+    }
+
+    this.once(`finished ${message.id}`, finishedCallback);
+    this.once(`deleted ${message.receipt}`, deletedCallback);
+
+    interval.unref();
+  }
+
+  private _decorateDelete() {
+    const originalDelete = this._messageAdapter.delete;
+    const self = this;
+
+    this._messageAdapter.delete = async function (...args: any) {
+      await originalDelete.apply(this, args);
+      self.emit(`deleted ${args[0]}`);
+      self.emit('deleted', args[0]);
+    };
+  }
+
+  private _hasMessageListener(): boolean {
+    return this.listeners('message').length > 0;
+  }
+
+  private async _queueFunction(message: Message): Promise<void> {
+    this.emit('message', message);
+    return new Promise((resolve) => {
+      this.once(`finished ${message.id}`, () => {
+        resolve();
+      });
+    });
+  }
 }
