@@ -2,8 +2,8 @@ import { SQS } from 'aws-sdk';
 import { MessageAdapter, Message, MessageAdapterParams } from './MessageAdapter';
 
 export interface SQSAdapterParams extends MessageAdapterParams {
-    queueURL: string
-    sqs?: SQS.Types.ClientConfiguration
+  queueURL: string
+  sqs?: SQS.Types.ClientConfiguration
 }
 
 export class SQSAdapter implements MessageAdapter {
@@ -28,7 +28,7 @@ export class SQSAdapter implements MessageAdapter {
       WaitTimeSeconds: 20,
     }).promise();
 
-    if(!response.Messages) {
+    if (!response.Messages) {
       return [];
     }
 

@@ -29,7 +29,7 @@ export class MessageSubscriber extends MessageEmitter {
     });
 
     this._maxMessages = Math.ceil(params.parallelism * 1.10);
-    this._refreshInterval = params.refreshInterval || 30,
+    this._refreshInterval = params.refreshInterval || 30;
     this._maxNumberOfMessages = this._messageAdapter.maxNumberOfMessages || 10;
     this._running = false;
     this._paused = false;
@@ -65,17 +65,17 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   public start() {
-    if(!this._hasMessageListener()) {
+    if (!this._hasMessageListener()) {
       throw new Error('Message listener should be implemented before start call.');
     }
 
-    if(this._stoped) {
+    if (this._stoped) {
       throw new Error('The subscriber is in stopped state, cannot call start again.');
     }
 
     this._running = true;
 
-    whilst (
+    whilst(
       this._checkRunning.bind(this),
       this._getMessages.bind(this),
       this._stopRunning.bind(this)
@@ -88,14 +88,14 @@ export class MessageSubscriber extends MessageEmitter {
 
   private async _getMessages() {
     try {
-      if(this._paused) {
+      if (this._paused) {
         return;
       }
 
       const idleSlots = this._maxMessages - (this._processorQueue.length);
       const numberOfRequests = Math.ceil(idleSlots / this._maxNumberOfMessages);
 
-      if(numberOfRequests > 0) {
+      if (numberOfRequests > 0) {
         await times(numberOfRequests, this._requestMessages().bind(this));
       } else {
         await wait(10);
@@ -109,7 +109,7 @@ export class MessageSubscriber extends MessageEmitter {
     return async () => {
       const messages = await this._messageAdapter.receive(this._maxNumberOfMessages);
 
-      if(!messages.length) {
+      if (!messages.length) {
         this.emit('empty');
         return;
       }
@@ -121,7 +121,7 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   private async _stopRunning(err?: any) {
-    if(err) {
+    if (err) {
       this.emit('error', err);
     }
 
@@ -131,7 +131,7 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   private _startRefreshes(messages: Message[]) {
-    if(this._refreshInterval > 0) {
+    if (this._refreshInterval > 0) {
       messages.forEach(this._startRefresh.bind(this));
     }
   }
