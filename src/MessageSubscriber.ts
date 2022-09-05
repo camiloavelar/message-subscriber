@@ -118,7 +118,7 @@ export class MessageSubscriber extends MessageEmitter {
 
         this._processorQueue.push(messages);
       } catch (err) {
-        await wait(100);
+        await wait(10);
         this.emit('error', err);
       }
     };

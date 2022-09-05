@@ -45,7 +45,11 @@ describe('MessageSubscriber', () => {
         });
 
         it('should emit error when errored getting messages', async () => {
-            const sub = new MessageSubscriber({ parallelism: 1, messageAdapter: {}, } as any);
+            const sub = new MessageSubscriber({
+                parallelism: 1, messageAdapter: {
+                    receive: sinon.stub().rejects(),
+                },
+            } as any);
 
             sub.on('message', async () => { });
 
@@ -55,11 +59,11 @@ describe('MessageSubscriber', () => {
 
             sub.start();
 
-            await wait(10);
+            await wait(100);
 
             sub.stop();
 
-            expect(errorSpy).callCount(1);
+            expect(errorSpy.callCount).to.be.greaterThan(1);
         });
     });
 
@@ -234,12 +238,12 @@ describe('MessageSubscriber', () => {
         messageAdapter.receive.resolves([{ id: '1', receipt: '2', }]);
 
         sub.on('message', async () => {
-            await wait(100);
+            await wait(500);
         });
 
         sub.start();
 
-        expect(sub.length).to.be.eql(1);
+        expect(sub.length).to.be.eql(0);
 
         await sub.gracefulShutdown();
     });
