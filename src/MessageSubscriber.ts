@@ -114,9 +114,7 @@ export class MessageSubscriber extends MessageEmitter {
         return;
       }
 
-      if(this._refreshInterval > 0) {
-        messages.forEach(this._startRefresh.bind(this));
-      }
+      this._startRefreshes(messages);
 
       this._processorQueue.push(messages);
     };
@@ -130,6 +128,12 @@ export class MessageSubscriber extends MessageEmitter {
     this._stoped = true;
 
     this.emit('stoped');
+  }
+
+  private _startRefreshes(messages: Message[]) {
+    if(this._refreshInterval > 0) {
+      messages.forEach(this._startRefresh.bind(this));
+    }
   }
 
   private _startRefresh(message: Message) {
