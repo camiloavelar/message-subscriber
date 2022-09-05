@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { setTimeout } from 'timers/promises';
 import { MessageSubscriber } from '../../src/MessageSubscriber';
+import { wait } from '../../src/utils';
 
 describe('MessageSubscriber', () => {
     it('should error when message listener is not implemented', () => {
@@ -42,7 +42,7 @@ describe('MessageSubscriber', () => {
 
         sub.start();
 
-        await setTimeout(10);
+        await wait(10);
 
         sub.stop();
 

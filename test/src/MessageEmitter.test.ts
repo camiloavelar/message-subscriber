@@ -1,15 +1,15 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { setTimeout } from 'timers/promises';
 
 import { MessageEmitter } from '../../src/MessageEmitter';
+import { wait } from '../../src/utils';
 
 describe('MessageEmitter', () => {
     it('should emit finished event on async callback resolve', async () => {
         const messageEmitter = new MessageEmitter();
 
         const callback = async () => {
-            await setTimeout(5);
+            await wait(5);
         };
 
         messageEmitter.on('message', callback);
@@ -23,7 +23,7 @@ describe('MessageEmitter', () => {
 
         expect(finishedCallback).callCount(0);
 
-        await setTimeout(6);
+        await wait(6);
 
         expect(finishedCallback).callCount(2);
         expect(finishedCallback.firstCall).to.be.calledWith();
