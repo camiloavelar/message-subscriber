@@ -92,13 +92,11 @@ export class MessageSubscriber extends MessageEmitter {
         return;
       }
 
-      const idleMessages = this._maxMessages - (this._processorQueue.length);
-      const numberOfRequests = Math.ceil(idleMessages / this._maxNumberOfMessages);
+      const idleSlots = this._maxMessages - (this._processorQueue.length);
+      const numberOfRequests = Math.ceil(idleSlots / this._maxNumberOfMessages);
 
-      if(numberOfRequests) {
-        let totalMessages = idleMessages;
-
-        await times(numberOfRequests, this._requestMessages(totalMessages).bind(this));
+      if(numberOfRequests > 0) {
+        await times(numberOfRequests, this._requestMessages().bind(this));
       } else {
         await wait(10);
       }
@@ -107,11 +105,9 @@ export class MessageSubscriber extends MessageEmitter {
     }
   }
 
-  private _requestMessages(totalMessages: number) {
+  private _requestMessages() {
     return async () => {
-      const messagesToRequest: number = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
-
-      const messages = await this._messageAdapter.receive(messagesToRequest);
+      const messages = await this._messageAdapter.receive(this._maxNumberOfMessages);
 
       if(!messages.length) {
         this.emit('empty');
@@ -123,8 +119,6 @@ export class MessageSubscriber extends MessageEmitter {
       }
 
       this._processorQueue.push(messages);
-
-      totalMessages -= messages.length;
     };
   }
 
