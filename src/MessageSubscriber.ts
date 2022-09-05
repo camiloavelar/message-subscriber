@@ -29,7 +29,7 @@ export class MessageSubscriber extends MessageEmitter {
     });
 
     this._maxMessages = Math.ceil(params.parallelism * 1.10);
-    this._refreshInterval = params.refreshInterval || 30,
+    this._refreshInterval = Object.prototype.hasOwnProperty.call(params, 'refreshInterval') ? params.refreshInterval as number : 30;
     this._maxNumberOfMessages = this._messageAdapter.maxNumberOfMessages || 10;
     this._running = false;
     this._paused = false;
@@ -43,6 +43,7 @@ export class MessageSubscriber extends MessageEmitter {
 
   public async gracefulShutdown() {
     this._running = false;
+
     await this._processorQueue.drain();
     this.emit('drained');
   }
@@ -65,17 +66,17 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   public start() {
-    if(!this._hasMessageListener()) {
+    if (!this._hasMessageListener()) {
       throw new Error('Message listener should be implemented before start call.');
     }
 
-    if(this._stoped) {
+    if (this._stoped) {
       throw new Error('The subscriber is in stopped state, cannot call start again.');
     }
 
     this._running = true;
 
-    whilst (
+    whilst(
       this._checkRunning.bind(this),
       this._getMessages.bind(this),
       this._stopRunning.bind(this)
@@ -87,55 +88,56 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   private async _getMessages() {
-    try {
-      if(this._paused) {
-        return;
-      }
+    if (this._paused) {
+      await wait(100);
+      return;
+    }
 
-      const idleMessages = this._maxMessages - (this._processorQueue.length);
-      const numberOfRequests = Math.ceil(idleMessages / this._maxNumberOfMessages);
+    const idleSlots = this._maxMessages - (this._processorQueue.length);
+    const numberOfRequests = Math.ceil(idleSlots / this._maxNumberOfMessages);
 
-      if(numberOfRequests) {
-        let totalMessages = idleMessages;
-
-        await times(numberOfRequests, this._requestMessages(totalMessages).bind(this));
-      } else {
-        await wait(10);
-      }
-    } catch (err) {
-      this.emit('error', err);
+    if (numberOfRequests > 0) {
+      await times(numberOfRequests, this._requestMessages().bind(this));
+    } else {
+      await wait(10);
     }
   }
 
-  private _requestMessages(totalMessages: number) {
+  private _requestMessages() {
     return async () => {
-      const messagesToRequest: number = (totalMessages > this._maxNumberOfMessages) ? this._maxNumberOfMessages : totalMessages;
+      try {
+        const messages = await this._messageAdapter.receive(this._maxNumberOfMessages);
 
-      const messages = await this._messageAdapter.receive(messagesToRequest);
+        if (!messages.length) {
+          this.emit('empty');
+          await wait(10);
+          return;
+        }
 
-      if(!messages.length) {
-        this.emit('empty');
-        return;
+        this._startRefreshes(messages);
+
+        this._processorQueue.push(messages);
+      } catch (err) {
+        await wait(10);
+        this.emit('error', err);
       }
-
-      if(this._refreshInterval > 0) {
-        messages.forEach(this._startRefresh.bind(this));
-      }
-
-      this._processorQueue.push(messages);
-
-      totalMessages -= messages.length;
     };
   }
 
   private async _stopRunning(err?: any) {
-    if(err) {
-      this.emit('error', err);
-    }
-
     this._stoped = true;
 
     this.emit('stoped');
+
+    if (err) {
+      this.emit('error', err);
+    }
+  }
+
+  private _startRefreshes(messages: Message[]) {
+    if (this._refreshInterval > 0) {
+      messages.forEach(this._startRefresh.bind(this));
+    }
   }
 
   private _startRefresh(message: Message) {
@@ -144,6 +146,7 @@ export class MessageSubscriber extends MessageEmitter {
       try {
         await message.delay(refreshInterval);
       } catch (err) {
+        await wait(100);
         this.emit('error', err);
       }
     }, (refreshInterval * 0.7) * 1000);
@@ -171,9 +174,12 @@ export class MessageSubscriber extends MessageEmitter {
     const self = this;
 
     this._messageAdapter.delete = async function (...args: any) {
-      await originalDelete.apply(this, args);
+      const response = await originalDelete.apply(this, args);
+
       self.emit(`deleted ${args[0]}`);
       self.emit('deleted', args[0]);
+
+      return response;
     };
   }
 

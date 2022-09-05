@@ -4,30 +4,28 @@ const eventEmitter = new EventEmitter();
 const originalOn = eventEmitter.on;
 
 export class MessageEmitter extends EventEmitter {
-    constructor() {
-      super();
+  constructor() {
+    super();
+  }
+
+  public on(...args: [eventName: string | symbol, listener: (...args: any[]) => void]): any {
+    if (args[0] === 'message') {
+      const oldFn: Function = args[1];
+
+      args[1] = async function (...args: any) {
+        try {
+          var response = await oldFn.apply(this, args);
+        } finally {
+          //@ts-ignore
+          this.emit(`finished ${args[0].id}`);
+          //@ts-ignore
+          this.emit('finished', args[0].id);
+        }
+
+        return response;
+      };
     }
 
-    //@ts-ignore
-    public async on(...args) {
-        if(args[0] === 'message') {
-            const oldFn = args[1];
-
-            args[1] = async function (...args: any) {
-              try {
-                var response = await oldFn.apply(this, args);
-              } finally {
-                //@ts-ignore
-                this.emit(`finished ${args[0].id}`);
-                //@ts-ignore
-                this.emit('finished', args[0].id);
-              }
-
-              return response;
-            };
-          }
-
-        //@ts-ignore
-        return originalOn.apply(this, args);
-    }
+    return originalOn.apply(this, args);
+  }
 }

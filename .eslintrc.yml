@@ -8,6 +8,16 @@ parser: "@typescript-eslint/parser"
 
 plugins: ["@typescript-eslint/eslint-plugin"]
 
+overrides:
+  - files:
+      - test/**/*.ts
+    env:
+      mocha: true
+    rules:
+      indent:
+        - error
+        - 4
+
 parserOptions:
   ecmaVersion: 2020
   sourceType: module
