@@ -10,7 +10,7 @@ describe('MessageEmitter', () => {
 
         const callback = async () => {
             await setTimeout(5);
-        }
+        };
 
         messageEmitter.on('message', callback);
 
@@ -19,7 +19,7 @@ describe('MessageEmitter', () => {
         messageEmitter.on('finished', finishedCallback);
         messageEmitter.on('finished 1', finishedCallback);
 
-        messageEmitter.emit('message', { id: '1' });
+        messageEmitter.emit('message', { id: '1', });
 
         expect(finishedCallback).callCount(0);
 
@@ -28,5 +28,5 @@ describe('MessageEmitter', () => {
         expect(finishedCallback).callCount(2);
         expect(finishedCallback.firstCall).to.be.calledWith();
         expect(finishedCallback.secondCall).to.be.calledWith('1');
-    })
-})
+    });
+});
