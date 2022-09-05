@@ -165,9 +165,12 @@ export class MessageSubscriber extends MessageEmitter {
     const self = this;
 
     this._messageAdapter.delete = async function (...args: any) {
-      await originalDelete.apply(this, args);
+      const response = await originalDelete.apply(this, args);
+
       self.emit(`deleted ${args[0]}`);
       self.emit('deleted', args[0]);
+
+      return response;
     };
   }
 
