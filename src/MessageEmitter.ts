@@ -10,7 +10,7 @@ export class MessageEmitter extends EventEmitter {
 
   public on(...args: [eventName: string | symbol, listener: (...args: any[]) => void]): any {
     if (args[0] === 'message') {
-      const oldFn = args[1];
+      const oldFn: Function = args[1];
 
       args[1] = async function (...args: any) {
         try {
