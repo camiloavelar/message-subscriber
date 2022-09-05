@@ -29,7 +29,7 @@ export class MessageSubscriber extends MessageEmitter {
     });
 
     this._maxMessages = Math.ceil(params.parallelism * 1.10);
-    this._refreshInterval = params.refreshInterval || 30;
+    this._refreshInterval = Object.prototype.hasOwnProperty.call(params, 'refreshInterval') ? params.refreshInterval as number : 30;
     this._maxNumberOfMessages = this._messageAdapter.maxNumberOfMessages || 10;
     this._running = false;
     this._paused = false;
@@ -43,6 +43,7 @@ export class MessageSubscriber extends MessageEmitter {
 
   public async gracefulShutdown() {
     this._running = false;
+
     await this._processorQueue.drain();
     this.emit('drained');
   }
@@ -88,6 +89,7 @@ export class MessageSubscriber extends MessageEmitter {
 
   private async _getMessages() {
     if (this._paused) {
+      await wait(100);
       return;
     }
 
@@ -108,6 +110,7 @@ export class MessageSubscriber extends MessageEmitter {
 
         if (!messages.length) {
           this.emit('empty');
+          await wait(10);
           return;
         }
 
@@ -115,8 +118,8 @@ export class MessageSubscriber extends MessageEmitter {
 
         this._processorQueue.push(messages);
       } catch (err) {
-        this.emit('error', err);
         await wait(100);
+        this.emit('error', err);
       }
     };
   }
@@ -143,6 +146,7 @@ export class MessageSubscriber extends MessageEmitter {
       try {
         await message.delay(refreshInterval);
       } catch (err) {
+        await wait(100);
         this.emit('error', err);
       }
     }, (refreshInterval * 0.7) * 1000);
