@@ -2,32 +2,53 @@ name: Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm install
+      - run: npm run test:coverage
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout source code'
-        uses: 'actions/checkout@v2'
+      - name: "Checkout source code"
+        uses: "actions/checkout@v2"
         with:
           ref: ${{ github.ref }}
-      - name: 'cat package.json'
+      - name: "cat package.json"
         run: cat ./package.json
-      - name: 'Automated Version Bump'
+      - name: "Automated Version Bump"
         id: version-bump
-        uses: 'phips28/gh-action-bump-version@master'
+        uses: "phips28/gh-action-bump-version@master"
         with:
-          commit-message: 'Release {{version}} [skip ci]'
-          minor-wording:  'BREAKING'
-          major-wording:  'FEATURE'
-          patch-wording:  'PATCH'
+          commit-message: "Release {{version}} [skip ci]"
+          minor-wording: "BREAKING"
+          major-wording: "FEATURE"
+          patch-wording: "PATCH"
           default: patch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'cat package.json'
+      - name: "cat package.json"
         run: cat ./package.json
-      - name: 'Output Step'
+      - name: "Output Step"
         env:
           NEW_TAG: ${{ steps.version-bump.outputs.newTag }}
         run: echo "new tag $NEW_TAG"
@@ -44,8 +65,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "16.x"
+          registry-url: "https://registry.npmjs.org"
       - name: Install dependencies and build 🔧
         run: npm install && npm run build
       - name: Publish package on NPM 📦
