@@ -1,38 +1,39 @@
-import { SQS } from 'aws-sdk';
+import { SQSClient, SQSClientConfig, Message as SQSMessage, ReceiveMessageCommand, DeleteMessageCommand, ChangeMessageVisibilityCommand } from '@aws-sdk/client-sqs';
 import { MessageAdapter, Message, MessageAdapterParams } from './MessageAdapter';
 
 export interface SQSAdapterParams extends MessageAdapterParams {
   queueURL: string
-  sqs?: SQS.Types.ClientConfiguration
+  sqs?: SQSClientConfig
 }
 
 export class SQSAdapter implements MessageAdapter {
   public maxNumberOfMessages: number;
-  private _sqs: SQS;
+  private _sqs: SQSClient;
   private _queueURL: string;
 
   constructor(params: SQSAdapterParams) {
     this.maxNumberOfMessages = params.maxNumberOfMessages;
     this._queueURL = params.queueURL;
-    this._sqs = new SQS({
-      apiVersion: '2012-11-05',
+    this._sqs = new SQSClient({
       ...(params.sqs ? params.sqs : undefined),
     });
   }
 
   public async receive(maxMessages?: number): Promise<Message[]> {
-    const response = await this._sqs.receiveMessage({
+    const command = new ReceiveMessageCommand({
       MaxNumberOfMessages: maxMessages || 10,
       QueueUrl: this._queueURL,
       VisibilityTimeout: 30,
       WaitTimeSeconds: 20,
-    }).promise();
+    });
+
+    const response = await this._sqs.send(command);
 
     if (!response.Messages) {
       return [];
     }
 
-    return response.Messages.map((message: SQS.Message) => {
+    return response.Messages.map((message: SQSMessage) => {
       return {
         id: message.MessageId,
         receipt: message.ReceiptHandle,
@@ -49,17 +50,21 @@ export class SQSAdapter implements MessageAdapter {
   }
 
   public async delete(id: string): Promise<void> {
-    await this._sqs.deleteMessage({
+    const command = new DeleteMessageCommand({
       QueueUrl: this._queueURL,
       ReceiptHandle: id,
-    }).promise();
+    });
+
+    await this._sqs.send(command);
   }
 
   public async delay(id: string, seconds: number): Promise<void> {
-    await this._sqs.changeMessageVisibility({
+    const command = new ChangeMessageVisibilityCommand({
       QueueUrl: this._queueURL,
       ReceiptHandle: id,
       VisibilityTimeout: seconds,
-    }).promise();
+    });
+
+    await this._sqs.send(command);
   }
 }
