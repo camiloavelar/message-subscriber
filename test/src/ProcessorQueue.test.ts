@@ -88,7 +88,6 @@ describe('ProcessorQueue', () => {
 
         processorQueue.stop();
         processorQueue.push([{ id: 1, }] as any);
-        await processorQueue.drain();
 
         expect(processorQueue.length).to.be.eql(1);
     });

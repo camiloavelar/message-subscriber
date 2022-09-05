@@ -87,47 +87,48 @@ export class MessageSubscriber extends MessageEmitter {
   }
 
   private async _getMessages() {
-    try {
-      if (this._paused) {
-        return;
-      }
+    if (this._paused) {
+      return;
+    }
 
-      const idleSlots = this._maxMessages - (this._processorQueue.length);
-      const numberOfRequests = Math.ceil(idleSlots / this._maxNumberOfMessages);
+    const idleSlots = this._maxMessages - (this._processorQueue.length);
+    const numberOfRequests = Math.ceil(idleSlots / this._maxNumberOfMessages);
 
-      if (numberOfRequests > 0) {
-        await times(numberOfRequests, this._requestMessages().bind(this));
-      } else {
-        await wait(10);
-      }
-    } catch (err) {
-      this.emit('error', err);
+    if (numberOfRequests > 0) {
+      await times(numberOfRequests, this._requestMessages().bind(this));
+    } else {
+      await wait(10);
     }
   }
 
   private _requestMessages() {
     return async () => {
-      const messages = await this._messageAdapter.receive(this._maxNumberOfMessages);
+      try {
+        const messages = await this._messageAdapter.receive(this._maxNumberOfMessages);
 
-      if (!messages.length) {
-        this.emit('empty');
-        return;
+        if (!messages.length) {
+          this.emit('empty');
+          return;
+        }
+
+        this._startRefreshes(messages);
+
+        this._processorQueue.push(messages);
+      } catch (err) {
+        this.emit('error', err);
+        await wait(100);
       }
-
-      this._startRefreshes(messages);
-
-      this._processorQueue.push(messages);
     };
   }
 
   private async _stopRunning(err?: any) {
-    if (err) {
-      this.emit('error', err);
-    }
-
     this._stoped = true;
 
     this.emit('stoped');
+
+    if (err) {
+      this.emit('error', err);
+    }
   }
 
   private _startRefreshes(messages: Message[]) {
