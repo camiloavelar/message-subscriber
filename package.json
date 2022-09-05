@@ -10,7 +10,7 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint --fix src/**/*.ts",
     "test": "mocha",
-    "test:coverage": "nyc mocha && nyc report --reporter=text-lcov | coveralls",
+    "test:coverage": "nyc mocha && nyc report --reporter=lcov",
     "test:watch": "mocha -watch"
   },
   "repository": {
