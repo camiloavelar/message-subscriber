@@ -32,6 +32,27 @@ const messageSubscriber = new MessageSubscriber({
 - `parallelism` - **required** the number of parallel messages that you will receive to process
 - `refreshInterval` - _optional_, when you receive one message from the queue service it becomes unavailable for a period of time, using the refresh interval the MessageSubscriber will delay the message using the interval passed (in seconds) (E.g.: Using aws sqs when you receive a message it becomes invisible for 30 seconds, if your processing takes more than 30 seconds, the message will become available and you can have duplicity, with refreshInterval the code will call delay on the message from time to time and the message will not become available when processing).
 
+### Events
+
+The MessageSubscriber emits the following events:
+
+- `message`: Comes with the message received
+    - Message:
+        - `id: string` - The id of the message
+        - `receipt?: string` - The receipt of the message (Generally used to delete)
+        - `payload: any` - The payload of the message
+        - `attributes?: any` - The attributes of the message
+        - `receivedTimestamp: number` - The timestamp that the message was received
+        - `delete: async function` - The function to delete message
+        - `delay:  async function` - The function to delay message
+
+- `empty`: When the queue is empty this event is emitted
+- `error`: If any operation errors this event will be dispatched with the error
+- `drained`: When gracefulShutdown() is called the code will wait all the messages that are queued to be processed, when all are processed this event is called
+- `paused`: When pause() is called this event is emitted
+- `resumed`: When resume() is called this event is emitted
+- `stoped`: `When stop() is called this event is emitter. (Note: when the queue is stoped it **CAN NOT** start again, this **DO NOT** wait for the queued messages to be processed)
+
 ## MessageAdapters
 
 The message adapters are interfaces to communicate with the queueing services at the cloud. 
@@ -58,27 +79,6 @@ const sqsAdapter = new SQSAdapter({
 - `queueURL` - **required**, the url of the AWS SQS Queue
 - `maxNumberOfMessages` - _optional_ the max number of messages to receive at one SQS receiveMessage call, default: 10
 - `sqs` - **required**, the params to configure the aws sqs queue (these are the params that are passed to aws-sdk sqs client).
-
-### Events
-
-The MessageSubscriber emits the following events:
-
-- `message`: Comes with the message received
-    - Message:
-        - `id: string` - The id of the message
-        - `receipt?: string` - The receipt of the message (Generally used to delete)
-        - `payload: any` - The payload of the message
-        - `attributes?: any` - The attributes of the message
-        - `receivedTimestamp: number` - The timestamp that the message was received
-        - `delete: async function` - The function to delete message
-        - `delay:  async function` - The function to delay message
-
-- `empty`: When the queue is empty this event is emitted
-- `error`: If any operation errors this event will be dispatched with the error
-- `drained`: When gracefulShutdown() is called the code will wait all the messages that are queued to be processed, when all are processed this event is called
-- `paused`: When pause() is called this event is emitted
-- `resumed`: When resume() is called this event is emitted
-- `stoped`: `When stop() is called this event is emitter. (Note: when the queue is stoped it **CAN NOT** start again, this **DO NOT** wait for the queued messages to be processed)
 
 ## Usage
 
