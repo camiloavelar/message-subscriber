@@ -17,8 +17,8 @@ MIT
 
 [coverage-image]: https://coveralls.io/repos/github/CamiloAvelar/message-subscriber/badge.svg?branch=main
 [coverage-url]: https://coveralls.io/github/CamiloAvelar/message-subscriber?branch=main
-[ci-image]: https://github.com/swarthy/redis-semaphore/actions/workflows/branches.yml/badge.svg
-[ci-url]: https://github.com/swarthy/redis-semaphore/actions/workflows/branches.yml
+[ci-image]: https://github.com/CamiloAvelar/message-subscriber/actions/workflows/validations.yml/badge.svg
+[ci-url]: https://github.com/CamiloAvelar/message-subscriber/actions/workflows/validations.yml
 [npm-image]: https://img.shields.io/npm/v/message-subscriber.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/message-subscriber
 [fossa-badge-image]: https://app.fossa.com/api/projects/custom%2B33191%2Fgit%40github.com%3ACamiloAvelar%2Fmessage-subscriber.git.svg?type=shield
