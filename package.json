@@ -1,7 +1,7 @@
 {
   "name": "message-subscriber",
+  "description": "Subscribe to messages at any Cloud Service. Receive messages only by registering a EventEmitter Listener. (AWS SQS, Azure ESQ, Google Tasks)",
   "version": "1.0.4",
-  "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
@@ -24,7 +24,12 @@
     "sqs",
     "queue",
     "consumer",
-    "receiver"
+    "receiver",
+    "esq",
+    "tasks",
+    "aws",
+    "azure",
+    "google"
   ],
   "author": "Camilo Avelar (camiloavelar@fastmail.com)",
   "license": "MIT",
