@@ -4,15 +4,17 @@ import { MessageAdapter } from '../../src/messageAdapters';
 import { MessageSubscriber } from '../../src/MessageSubscriber';
 import { wait } from '../../src/utils';
 
-let messageAdapter = {
-    maxNumberOfMessages: 10,
-    receive: sinon.stub(),
-    delete: sinon.stub(),
-    delay: sinon.stub(),
-};
+let messageAdapter: any;
 
 describe('MessageSubscriber', () => {
     beforeEach(() => {
+        messageAdapter = {
+            maxNumberOfMessages: 10,
+            receive: sinon.stub(),
+            delete: sinon.stub(),
+            delay: sinon.stub(),
+        };
+
         sinon.reset();
     });
 
@@ -92,6 +94,37 @@ describe('MessageSubscriber', () => {
         expect(messageMock.id).to.be.eql('1');
         expect(delayStub).callCount(2);
         expect(delayStub).to.be.calledWith(1);
+    });
+
+    it('should receive messages waiting for maxNumber of messages to be satisfied', async () => {
+        messageAdapter.maxNumberOfMessages = 1;
+
+        const sub = new MessageSubscriber({
+            refreshInterval: 1,
+            parallelism: 1,
+            messageAdapter: <unknown>messageAdapter as MessageAdapter,
+        });
+
+        const delayStub = sinon.stub();
+
+        messageAdapter.receive.resolves([
+            { id: '1', delay: delayStub, }
+        ]);
+
+        let messageMock: any;
+
+        sub.on('message', async (message: any) => {
+            await wait(10);
+            messageMock = message;
+        });
+
+        sub.start();
+
+        await wait(11);
+
+        await sub.gracefulShutdown();
+
+        expect(messageMock.id).to.be.eql('1');
     });
 
     it('should emit empty queue', async () => {

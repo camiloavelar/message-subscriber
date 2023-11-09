@@ -78,6 +78,24 @@ describe('ProcessorQueue', () => {
         expect(processorQueue.length).to.be.eql(0);
     });
 
+    it('should not wait for drain when nothing pushed to queue yet', async () => {
+        const queueFunction = sinon.spy((message: any, callback) => {
+            callback();
+        });
+
+        const processorQueue = new ProcessorQueue({
+            parallelism: 1,
+            queueFunction,
+        });
+
+        expect(processorQueue.length).to.be.eql(0);
+
+        await processorQueue.drain();
+
+        expect(queueFunction).callCount(0);
+        expect(processorQueue.length).to.be.eql(0);
+    });
+
     describe('should stop queue', async () => {
         const processorQueue = new ProcessorQueue({
             parallelism: 1,
