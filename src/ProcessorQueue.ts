@@ -1,5 +1,6 @@
 import { Message } from './messageAdapters';
 import { queue, QueueObject } from 'async';
+import { wait } from './utils';
 
 export class ProcessorQueue {
   private _queue: QueueObject<any>;
@@ -40,6 +41,13 @@ export class ProcessorQueue {
   }
 
   public async drain(): Promise<void> {
+    if(!this._queue.started) {
+      await wait(100); // Wait for the subscriber to run
+      if(!this._queue.started) {
+        return Promise.resolve();
+      }
+    }
+
     await this._queue.drain();
   }
 
