@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: message-subscriber
+  annotations:
+    github.com/project-slug: CamiloAvelar/message-subscriber
+spec:
+  type: other
+  lifecycle: unknown
+  owner: dev-backend
