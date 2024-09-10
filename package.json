@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.632.0",
-    "async": "^3.2.5"
+    "async": "^3.2.6"
   },
   "devDependencies": {
     "@types/async": "^3.2.15",
