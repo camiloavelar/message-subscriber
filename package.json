@@ -1,7 +1,7 @@
 {
   "name": "message-subscriber",
   "description": "Subscribe to messages at any Cloud Service. Receive messages only by registering a EventEmitter Listener. (AWS SQS, Azure ESQ, Google Tasks)",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
